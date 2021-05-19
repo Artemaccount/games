@@ -1,18 +1,21 @@
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class Main {
-    public static void main(String[] args) {
+    public static StringBuilder stringBuilder = new StringBuilder();
+
+    public static void main(String[] args) throws Exception {
 
         //Дата для логов файла temp.txt
         Date currentDate = new Date();
         SimpleDateFormat formatDate = new SimpleDateFormat("dd.MM.yyy hh:mm:ss a");
 
-        StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(formatDate.format(currentDate) + "\n");
 
         //В папке Games создайте несколько директорий: src, res, savegames, temp.
@@ -39,86 +42,92 @@ public class Main {
         try {
             temp.mkdir();
             tempFile.createNewFile();
-        } catch(IOException e) {
+        } catch (IOException e) {
             System.out.println("Ошибка создания директория или файла temp:");
             System.out.println(e.getMessage());
         }
 
         //Волшебство создания директорий и файлов с записью в стрингбилдер :)
         try (FileWriter writer = new FileWriter(tempFile, true)) {
-            if (src.mkdir()) {
-                stringBuilder.append("Каталог src успешно создан!");
-            } else {
-                stringBuilder.append("Каталог src не создан!");
-            }
-            stringBuilder.append('\n');
-
-            if (res.mkdir()) {
-                stringBuilder.append("Каталог res успешно создан!");
-            } else {
-                stringBuilder.append("Каталог res не создан!");
-            }
-            stringBuilder.append('\n');
-
-            if (savegames.mkdir()) {
-                stringBuilder.append("Каталог savegames успешно создан!");
-            } else {
-                stringBuilder.append("Каталог savegames не создан!");
-            }
-            stringBuilder.append('\n');
-
-            if (main.mkdir()) {
-                stringBuilder.append("Каталог main успешно создан!");
-            } else {
-                stringBuilder.append("Каталог main не создан!");
-            }
-            stringBuilder.append('\n');
-
-            if (test.mkdir()) {
-                stringBuilder.append("Каталог test успешно создан!");
-            } else {
-                stringBuilder.append("Каталог test не создан!");
-            }
-            stringBuilder.append('\n');
-
-            if (mainJava.createNewFile()) {
-                stringBuilder.append("Файл Main.java успешно создан!");
-            } else {
-                stringBuilder.append("Файл Main.java не создан!");
-            }
-            stringBuilder.append('\n');
-
-            if (utilsJava.createNewFile()) {
-                stringBuilder.append("Файл Test.java успешно создан!");
-            } else {
-                stringBuilder.append("Файл Test.java не создан!");
-            }
-            stringBuilder.append('\n');
-
-            if (drawables.mkdir()) {
-                stringBuilder.append("Каталог drawables успешно создан!");
-            } else {
-                stringBuilder.append("Каталог drawables не создан!");
-            }
-            stringBuilder.append('\n');
-
-            if (vectors.mkdir()) {
-                stringBuilder.append("Каталог vectors успешно создан!");
-            } else {
-                stringBuilder.append("Каталог vectors не создан!");
-            }
-            stringBuilder.append('\n');
-
-            if (icons.mkdir()) {
-                stringBuilder.append("Каталог icons успешно создан!");
-            } else {
-                stringBuilder.append("Каталог icons не создан!");
-            }
-            stringBuilder.append('\n');
+            makeDir(src);
+            makeDir(res);
+            makeDir(savegames);
+            makeDir(main);
+            makeDir(test);
+            makeDir(drawables);
+            makeDir(vectors);
+            makeDir(icons);
+            createFile(mainJava);
+            createFile(utilsJava);
             writer.append(stringBuilder.toString());
             writer.flush();
         } catch (IOException ex) {
             System.out.println(ex.getMessage());
         }
+
+        GameProgress user1 = new GameProgress(100, 2, 10, 244.32);
+        GameProgress user2 = new GameProgress(87, 10, 4, 255.51);
+        GameProgress user3 = new GameProgress(84, 4, 24, 335.31);
+
+        saveGame("C:\\Games\\savegames\\save1.dat", user1);
+        saveGame("C:\\Games\\savegames\\save2.dat", user2);
+        saveGame("C:\\Games\\savegames\\save3.dat", user3);
+
+        List<String> files = Arrays.asList("C:\\Games\\savegames\\save1.dat",
+                "C:\\Games\\savegames\\save2.dat",
+                "C:\\Games\\savegames\\save3.dat");
+
+        zipFiles("C:\\Games\\savegames\\saves.zip", files);
+        deleteFile("C:\\Games\\savegames\\save1.dat");
+        deleteFile("C:\\Games\\savegames\\save2.dat");
+        deleteFile("C:\\Games\\savegames\\save3.dat");
+
+    }
+
+    public static void saveGame(String address, GameProgress gameProgress) {
+        try (FileOutputStream fos = new FileOutputStream(address);
+             ObjectOutputStream oos = new ObjectOutputStream(fos)) {
+            oos.writeObject(gameProgress);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public static void deleteFile(String address) {
+        File save = new File(address);
+        save.delete();
+    }
+
+    public static void makeDir(File file) {
+        if (file.mkdir()) {
+            stringBuilder.append("Каталог " + file.getName() + " успешно создан!");
+        } else {
+            stringBuilder.append("Каталог " + file.getName() + " не создан!");
+        }
+        stringBuilder.append('\n');
+    }
+
+    public static void createFile(File file) throws Exception {
+        if (file.createNewFile()) {
+            stringBuilder.append("Файл " + file.getName() + " успешно создан!");
+        } else {
+            stringBuilder.append("Файл " + file.getName() + " не создан!");
+        }
+        stringBuilder.append('\n');
+    }
+
+    public static void zipFiles(String address, List<String> files) throws Exception {
+        ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(address));
+        for (int i = 0; i < files.size(); i++) {
+            FileInputStream fis = new FileInputStream(files.get(i));
+            ZipEntry entry = new ZipEntry("Save" + i + ".dat");
+            zout.putNextEntry(entry);
+            byte[] buffer = new byte[fis.available()];
+            fis.read(buffer);
+            zout.write(buffer);
+            zout.closeEntry();
+            fis.close();
+        }
+        zout.close();
     }
 }
